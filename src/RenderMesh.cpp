@@ -11,14 +11,13 @@ struct Vertex {
 };
 
 static VulkanMesh mesh;
+static VulkanPipeline pipeline;
 static vector<Vertex> vertices;
 static vector<uint32_t> indices;
 
-void renderMesh(
-    Vulkan& vk,
-    vector<VkCommandBuffer>& cmds
+void uploadMesh(
+    Vulkan& vk
 ) {
-    VulkanPipeline pipeline;
     initVKPipeline(
         vk,
         "default",
@@ -53,77 +52,77 @@ void renderMesh(
         0,
         vk.uniforms.handle
     );
+}
 
-    uint32_t framebufferCount = vk.swap.images.size();
-    cmds.resize(framebufferCount);
-    createCommandBuffers(vk.device, vk.cmdPool, framebufferCount, cmds);
-    for (size_t swapIdx = 0; swapIdx < framebufferCount; swapIdx++) {
-        auto& cmd = cmds[swapIdx];
-        beginFrameCommandBuffer(cmd);
+void recordMesh(
+    Vulkan& vk,
+    VkFramebuffer fb,
+    VkCommandBuffer& cmd
+) {
+    beginFrameCommandBuffer(cmd);
 
-        VkClearValue colorClear;
-        colorClear.color = {};
-        VkClearValue depthClear;
-        depthClear.depthStencil = { 1.f, 0 };
-        VkClearValue clears[] = { colorClear, depthClear };
+    VkClearValue colorClear;
+    colorClear.color = {};
+    VkClearValue depthClear;
+    depthClear.depthStencil = { 1.f, 0 };
+    VkClearValue clears[] = { colorClear, depthClear };
 
-        VkRenderPassBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        beginInfo.clearValueCount = 2;
-        beginInfo.pClearValues = clears;
-        beginInfo.framebuffer = vk.swap.framebuffers[swapIdx];
-        beginInfo.renderArea.extent = vk.swap.extent;
-        beginInfo.renderArea.offset = {0, 0};
-        beginInfo.renderPass = vk.renderPass;
+    VkRenderPassBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    beginInfo.clearValueCount = 2;
+    beginInfo.pClearValues = clears;
+    beginInfo.framebuffer = fb;
+    beginInfo.renderArea.extent = vk.swap.extent;
+    beginInfo.renderArea.offset = {0, 0};
+    beginInfo.renderPass = vk.renderPass;
 
-        vkCmdBeginRenderPass(cmd, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(cmd, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(
-            cmd,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            pipeline.handle
-        );
-        vkCmdBindDescriptorSets(
-            cmd,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            pipeline.layout,
-            0,
-            1,
-            &pipeline.descriptorSet,
-            0,
-            nullptr
-        );
-        VkDeviceSize offsets[] = {0};
+    vkCmdBindPipeline(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipeline.handle
+    );
+    vkCmdBindDescriptorSets(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipeline.layout,
+        0,
+        1,
+        &pipeline.descriptorSet,
+        0,
+        nullptr
+    );
+    VkDeviceSize offsets[] = {0};
 
-        vkCmdBindVertexBuffers(
-            cmd,
-            0, 1,
-            &mesh.vBuff.handle,
-            offsets
-        );
-        vkCmdBindIndexBuffer(
-            cmd,
-            mesh.iBuff.handle,
-            0,
-            VK_INDEX_TYPE_UINT32
-        );
-        Vec3 white = {1, 1, 1};
-        vkCmdPushConstants(
-            cmd,
-            pipeline.layout,
-            VK_SHADER_STAGE_VERTEX_BIT,
-            0,
-            sizeof(white),
-            &white
-        );
-        vkCmdDrawIndexed(
-            cmd,
-            indices.size(),
-            1, 0, 0, 0
-        );
+    vkCmdBindVertexBuffers(
+        cmd,
+        0, 1,
+        &mesh.vBuff.handle,
+        offsets
+    );
+    vkCmdBindIndexBuffer(
+        cmd,
+        mesh.iBuff.handle,
+        0,
+        VK_INDEX_TYPE_UINT32
+    );
+    Vec3 white = {1, 1, 1};
+    vkCmdPushConstants(
+        cmd,
+        pipeline.layout,
+        VK_SHADER_STAGE_VERTEX_BIT,
+        0,
+        sizeof(white),
+        &white
+    );
+    vkCmdDrawIndexed(
+        cmd,
+        indices.size(),
+        1, 0, 0, 0
+    );
 
-        vkCmdEndRenderPass(cmd);
+    vkCmdEndRenderPass(cmd);
 
-        checkSuccess(vkEndCommandBuffer(cmd));
-    }
+    checkSuccess(vkEndCommandBuffer(cmd));
 }

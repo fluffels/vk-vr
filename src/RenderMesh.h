@@ -4,7 +4,12 @@
 
 using namespace std;
 
-void renderMesh(
-    Vulkan& vk,
-    vector<VkCommandBuffer>& cmds
+void uploadMesh(
+    Vulkan& vk
+);
+
+void recordMesh(
+    Vulkan&,
+    VkFramebuffer,
+    VkCommandBuffer&
 );
