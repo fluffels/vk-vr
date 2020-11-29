@@ -8,7 +8,7 @@ void uploadMesh(
     Vulkan& vk
 );
 
-void recordMesh(
+void renderMesh(
     Vulkan&,
     VkFramebuffer,
     VkCommandBuffer&

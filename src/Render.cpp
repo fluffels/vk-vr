@@ -24,9 +24,11 @@ void renderInit(Vulkan& vk, Uniforms& uniforms) {
     auto framebufferCount = (uint32_t)vk.swap.images.size();
     createCommandBuffers(vk.device, vk.cmdPool, framebufferCount, meshCmds);
     for (int i = 0; i < framebufferCount; i++) {
-        auto& cmds = meshCmds[i];
+        auto& cmd = meshCmds[i];
         auto& framebuffer = vk.swap.framebuffers[i];
-        recordMesh(vk, framebuffer, cmds);
+        beginFrameCommandBuffer(cmd);
+            renderMesh(vk, framebuffer, cmd);
+        checkSuccess(vkEndCommandBuffer(cmd));
     }
 }
 

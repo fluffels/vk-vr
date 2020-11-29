@@ -54,13 +54,11 @@ void uploadMesh(
     );
 }
 
-void recordMesh(
+void renderMesh(
     Vulkan& vk,
     VkFramebuffer fb,
     VkCommandBuffer& cmd
 ) {
-    beginFrameCommandBuffer(cmd);
-
     VkClearValue colorClear;
     colorClear.color = {};
     VkClearValue depthClear;
@@ -123,6 +121,4 @@ void recordMesh(
     );
 
     vkCmdEndRenderPass(cmd);
-
-    checkSuccess(vkEndCommandBuffer(cmd));
 }
