@@ -143,6 +143,7 @@ WinMain(
     Uniforms uniforms = {};
     renderInit(vk, uniforms);
 
+#ifdef SAVE
     {
         FILE* save;
         auto err = fopen_s(&save, "save.dat", "r");
@@ -152,6 +153,7 @@ WinMain(
             fclose(save);
         }
     }
+#endif
 
     DirectInput directInput(instance);
     Controller* controller = directInput.controller;
