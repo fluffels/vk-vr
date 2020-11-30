@@ -28,8 +28,26 @@ void renderInit(Vulkan& vk, Uniforms& uniforms) {
     for (int i = 0; i < framebufferCount; i++) {
         auto& cmd = meshCmds[i];
         auto& framebuffer = vk.swap.framebuffers[i];
+
+        VkClearValue colorClear;
+        colorClear.color = {};
+        VkClearValue depthClear;
+        depthClear.depthStencil = { 1.f, 0 };
+        VkClearValue clears[] = { colorClear, depthClear };
+
+        VkRenderPassBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        beginInfo.clearValueCount = 2;
+        beginInfo.pClearValues = clears;
+        beginInfo.framebuffer = framebuffer;
+        beginInfo.renderArea.extent = vk.swap.extent;
+        beginInfo.renderArea.offset = {0, 0};
+        beginInfo.renderPass = vk.renderPass;
+
         beginFrameCommandBuffer(cmd);
-            renderMesh(vk, framebuffer, cmd);
+        vkCmdBeginRenderPass(cmd, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            renderMesh(cmd);
+        vkCmdEndRenderPass(cmd);
         checkSuccess(vkEndCommandBuffer(cmd));
     }
 }

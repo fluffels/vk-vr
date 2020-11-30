@@ -55,27 +55,8 @@ void uploadMesh(
 }
 
 void renderMesh(
-    Vulkan& vk,
-    VkFramebuffer fb,
     VkCommandBuffer& cmd
 ) {
-    VkClearValue colorClear;
-    colorClear.color = {};
-    VkClearValue depthClear;
-    depthClear.depthStencil = { 1.f, 0 };
-    VkClearValue clears[] = { colorClear, depthClear };
-
-    VkRenderPassBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    beginInfo.clearValueCount = 2;
-    beginInfo.pClearValues = clears;
-    beginInfo.framebuffer = fb;
-    beginInfo.renderArea.extent = vk.swap.extent;
-    beginInfo.renderArea.offset = {0, 0};
-    beginInfo.renderPass = vk.renderPass;
-
-    vkCmdBeginRenderPass(cmd, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
     vkCmdBindPipeline(
         cmd,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -119,6 +100,4 @@ void renderMesh(
         indices.size(),
         1, 0, 0, 0
     );
-
-    vkCmdEndRenderPass(cmd);
 }

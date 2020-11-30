@@ -9,7 +9,5 @@ void uploadMesh(
 );
 
 void renderMesh(
-    Vulkan&,
-    VkFramebuffer,
     VkCommandBuffer&
 );
