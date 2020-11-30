@@ -1,3 +1,5 @@
+#pragma warning(disable: 4018)
+
 #include "Render.h"
 #include "RenderMesh.h"
 #include "RenderText.h"
