@@ -22,6 +22,31 @@ void renderInit(Vulkan& vk, Uniforms& uniforms) {
 
     quaternionInit(uniforms.rotation);
 
+    VkRenderPass renderPass = {};
+    createRenderPass(vk, true, true, renderPass);
+
+    VulkanSampler prepassSampler = {};
+    createPrepassImage(
+        vk.device,
+        vk.memories,
+        vk.swap.extent,
+        vk.queueFamily,
+        vk.swap.format,
+        prepassSampler
+    );
+
+    VkImageView imageViews[] = { prepassSampler.image.view, vk.depth.view };
+    VkFramebufferCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    createInfo.attachmentCount = 2;
+    createInfo.pAttachments = imageViews;
+    createInfo.renderPass = renderPass;
+    createInfo.height = vk.swap.extent.height;
+    createInfo.width = vk.swap.extent.width;
+    createInfo.layers = 1;
+    VkFramebuffer prepassFramebuffer = {};
+    checkSuccess(vkCreateFramebuffer(vk.device, &createInfo, nullptr, &prepassFramebuffer));
+
     uploadMesh(vk);
     auto framebufferCount = (uint32_t)vk.swap.images.size();
     createCommandBuffers(vk.device, vk.cmdPool, framebufferCount, meshCmds);
@@ -39,10 +64,10 @@ void renderInit(Vulkan& vk, Uniforms& uniforms) {
         beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         beginInfo.clearValueCount = 2;
         beginInfo.pClearValues = clears;
-        beginInfo.framebuffer = framebuffer;
+        beginInfo.framebuffer = prepassFramebuffer;
         beginInfo.renderArea.extent = vk.swap.extent;
         beginInfo.renderArea.offset = {0, 0};
-        beginInfo.renderPass = vk.renderPass;
+        beginInfo.renderPass = renderPass;
 
         beginFrameCommandBuffer(cmd);
         vkCmdBeginRenderPass(cmd, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
