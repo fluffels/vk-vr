@@ -2,12 +2,14 @@
 
 #include "Render.h"
 #include "RenderMesh.h"
+#include "RenderPostProcess.h"
 #include "RenderText.h"
 #include "State.h"
 
 #include "MathLib.cpp"
 
 vector<VkCommandBuffer> meshCmds;
+vector<VkCommandBuffer> postProcessCmds;
 vector<VkCommandBuffer> textCmds;
 
 void renderInit(Vulkan& vk, Uniforms& uniforms) {
@@ -52,7 +54,6 @@ void renderInit(Vulkan& vk, Uniforms& uniforms) {
     createCommandBuffers(vk.device, vk.cmdPool, framebufferCount, meshCmds);
     for (int i = 0; i < framebufferCount; i++) {
         auto& cmd = meshCmds[i];
-        auto& framebuffer = vk.swap.framebuffers[i];
 
         VkClearValue colorClear;
         colorClear.color = {};
@@ -75,12 +76,40 @@ void renderInit(Vulkan& vk, Uniforms& uniforms) {
         vkCmdEndRenderPass(cmd);
         checkSuccess(vkEndCommandBuffer(cmd));
     }
+
+    createCommandBuffers(vk.device, vk.cmdPool, framebufferCount, postProcessCmds);
+    for (int i = 0; i < framebufferCount; i++) {
+        auto& cmd = postProcessCmds[i];
+        auto& framebuffer = vk.swap.framebuffers[i];
+
+        VkClearValue colorClear;
+        colorClear.color = {};
+        VkClearValue depthClear;
+        depthClear.depthStencil = { 1.f, 0 };
+        VkClearValue clears[] = { colorClear, depthClear };
+
+        VkRenderPassBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        beginInfo.clearValueCount = 2;
+        beginInfo.pClearValues = clears;
+        beginInfo.framebuffer = framebuffer;
+        beginInfo.renderArea.extent = vk.swap.extent;
+        beginInfo.renderArea.offset = {0, 0};
+        beginInfo.renderPass = vk.renderPass;
+
+        beginFrameCommandBuffer(cmd);
+        vkCmdBeginRenderPass(cmd, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            renderPostProcess(vk, cmd);
+        vkCmdEndRenderPass(cmd);
+        checkSuccess(vkEndCommandBuffer(cmd));
+    }
 }
 
 void renderFrame(Vulkan& vk, char* debugString) {
     recordTextCommandBuffers(vk, textCmds, debugString);
     vector<vector<VkCommandBuffer>> cmdss;
     cmdss.push_back(meshCmds);
+    cmdss.push_back(postProcessCmds);
     cmdss.push_back(textCmds);
     present(vk, cmdss);
     resetTextCommandBuffers(vk, textCmds);

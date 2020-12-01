@@ -34,6 +34,7 @@ set(PLATFORM_INDEPENDENT_FILES
     lib/SPIRV-Reflect/spirv_reflect.c
     lib/easyloggingpp/src/easylogging++.cc
     src/RenderMesh.cpp
+    src/RenderPostProcess.cpp
     src/RenderText.cpp
     src/Render.cpp
     src/State.cpp
