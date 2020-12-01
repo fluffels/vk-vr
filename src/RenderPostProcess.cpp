@@ -14,13 +14,17 @@ void renderPostProcess(
         pipeline
     );
 
-    const size_t componentCount = 4;
+    const size_t componentCount = 6;
     const size_t vertexCount = 4;
     float vertices[vertexCount * componentCount] = {
         -1, 1, 0, 1,
+        0, 1,
         -1, -1, 0, 1,
+        0, 0,
         1, -1, 0, 1,
-        1, 1, 0, 1
+        1, 0,
+        1, 1, 0, 1,
+        1, 1
     };
 
     const size_t indexCount = 6;
