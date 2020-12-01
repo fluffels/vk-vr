@@ -6,5 +6,6 @@ using namespace std;
 
 void renderPostProcess(
     Vulkan& vk,
+    VulkanSampler sourceSampler,
     VkCommandBuffer
 );

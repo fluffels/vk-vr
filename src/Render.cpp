@@ -100,7 +100,7 @@ void renderInit(Vulkan& vk, Uniforms& uniforms) {
 
         beginFrameCommandBuffer(cmd);
         vkCmdBeginRenderPass(cmd, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
-            renderPostProcess(vk, cmd);
+            renderPostProcess(vk, offscreenSampler, cmd);
         vkCmdEndRenderPass(cmd);
         checkSuccess(vkEndCommandBuffer(cmd));
     }

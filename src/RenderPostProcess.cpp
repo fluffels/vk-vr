@@ -5,6 +5,7 @@
 
 void renderPostProcess(
     Vulkan& vk,
+    VulkanSampler sourceSampler,
     VkCommandBuffer cmd
 ) {
     VulkanPipeline pipeline;
@@ -44,12 +45,29 @@ void renderPostProcess(
         mesh
     );
 
+    updateCombinedImageSampler(
+        vk.device,
+        pipeline.descriptorSet,
+        0,
+        &sourceSampler,
+        1
+    );
+
     vkCmdBindPipeline(
         cmd,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         pipeline.handle
     );
     VkDeviceSize offsets[] = {0};
+
+    vkCmdBindDescriptorSets(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipeline.layout,
+        0, 1,
+        &pipeline.descriptorSet,
+        0, nullptr
+    );
 
     vkCmdBindVertexBuffers(
         cmd,
