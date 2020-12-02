@@ -27,6 +27,15 @@ void renderInit(Vulkan& vk, Uniforms& uniforms) {
     VkRenderPass offscreenPass = {};
     createRenderPass(vk, true, true, offscreenPass);
 
+    VulkanImage offscreenDepth = {};
+    createVulkanDepthBuffer(
+        vk.device,
+        vk.memories,
+        vk.swap.extent,
+        vk.queueFamily,
+        offscreenDepth
+    );
+
     VulkanSampler offscreenSampler = {};
     createPrepassImage(
         vk.device,
@@ -37,8 +46,7 @@ void renderInit(Vulkan& vk, Uniforms& uniforms) {
         offscreenSampler
     );
 
-    // TODO(jan): don't reuse depth buffer
-    VkImageView imageViews[] = { offscreenSampler.image.view, vk.depth.view };
+    VkImageView imageViews[] = { offscreenSampler.image.view, offscreenDepth.view };
     VkFramebufferCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     createInfo.attachmentCount = 2;
