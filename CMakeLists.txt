@@ -3,6 +3,11 @@ set (CMAKE_CXX_STANDARD 17)
 
 project (vk-template)
 
+set(VCPKG "C:/vcpkg/")
+set(CMAKE_TOOLCHAIN_FILE "${VCPKG}/scripts/buildsystems/vcpkg.cmake")
+include(${CMAKE_TOOLCHAIN_FILE})
+link_directories(${VCPKG}installed/x64-windows/lib)
+
 # add_definitions(-DVULKAN_MESH_SHADER)
 # add_definitions(-DVULKAN_PERFORMANCE_COUNTERS)
 
@@ -58,4 +63,5 @@ target_link_libraries(
     ${Vulkan_LIBRARIES}
     dinput8.lib
     dxguid.lib
+    openvr_api
 )
