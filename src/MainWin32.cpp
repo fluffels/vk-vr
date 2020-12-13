@@ -141,22 +141,65 @@ WinMain(
     initVK(vk);
 
     {
+        if (!vr::VR_IsHmdPresent()) {
+            LOG(ERROR) << "no headset connected";
+            exit(-1);
+        }
+
+        if (!vr::VR_IsRuntimeInstalled()) {
+            LOG(ERROR) << "no runtime installed";
+            exit(-1);
+        }
+
         vr::EVRInitError error = vr::VRInitError_None;
-        vr::IVRSystem* headset = vr::VR_Init(&error, vr::VRApplication_Scene);
+        vr::IVRSystem* vr = vr::VR_Init(&error, vr::VRApplication_Scene);
 
         if (error != vr::VRInitError_None) {
             LOG(ERROR) << "could not init openvr";
             LOG(ERROR) << vr::VR_GetVRInitErrorAsEnglishDescription(error);
+            exit(-1);
+        }
+
+        if (!vr) {
+            LOG(ERROR) << "could not init openvr: unknown problem";
+            exit(-1);
+        }
+
+        for (
+            int i = vr::k_unTrackedDeviceIndex_Hmd;
+            i < vr::k_unMaxTrackedDeviceCount;
+            i++
+        ) {
+            if (vr->IsTrackedDeviceConnected(i)) {
+                auto deviceClass = vr->GetTrackedDeviceClass(i);
+                char buffer[255];
+                auto name = vr->GetStringTrackedDeviceProperty(
+                    i,
+                    vr::Prop_TrackingSystemName_String,
+                    buffer,
+                    255
+                );
+                LOG(INFO) << "tracked device [Class " << deviceClass << "]: " << buffer;
+            }
         }
 
         if (!vr::VRCompositor()) {
             LOG(ERROR) << "could not start VR compositor";
         }
 
+        auto vrIface = (vr::IVRRenderModels*)vr::VR_GetGenericInterface(
+            vr::IVRRenderModels_Version,
+            &error
+        );
+        if (!vrIface) {
+            LOG(ERROR) << "could not get VR interface";
+            LOG(ERROR) << vr::VR_GetVRInitErrorAsEnglishDescription(error);
+        }
     }
 
+    Render render = {};
     Uniforms uniforms = {};
-    renderInit(vk, uniforms);
+    renderInit(vk, render, uniforms);
 
 #ifdef SAVE
     {
@@ -209,7 +252,7 @@ WinMain(
 
             QueryPerformanceCounter(&frameStart);
                 updateUniforms(vk, &uniforms, sizeof(uniforms));
-                renderFrame(vk, debugString);
+                renderFrame(vk, render, debugString);
             QueryPerformanceCounter(&frameEnd);
             frameDelta = frameEnd.QuadPart - frameStart.QuadPart;
             frameTime = (float)frameDelta / counterFrequency.QuadPart;
