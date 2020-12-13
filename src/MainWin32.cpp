@@ -4,7 +4,7 @@
 #include <iomanip>
 
 #include <Windows.h>
-
+#include <openvr.h>
 
 #include "easylogging++.h"
 INITIALIZE_EASYLOGGINGPP
@@ -139,6 +139,21 @@ WinMain(
     createVKInstance(vk);
     vk.swap.surface = getSurface(window, instance, vk.handle);
     initVK(vk);
+
+    {
+        vr::EVRInitError error = vr::VRInitError_None;
+        vr::IVRSystem* headset = vr::VR_Init(&error, vr::VRApplication_Scene);
+
+        if (error != vr::VRInitError_None) {
+            LOG(ERROR) << "could not init openvr";
+            LOG(ERROR) << vr::VR_GetVRInitErrorAsEnglishDescription(error);
+        }
+
+        if (!vr::VRCompositor()) {
+            LOG(ERROR) << "could not start VR compositor";
+        }
+
+    }
 
     Uniforms uniforms = {};
     renderInit(vk, uniforms);
