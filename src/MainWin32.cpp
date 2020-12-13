@@ -165,6 +165,10 @@ WinMain(
             exit(-1);
         }
 
+//TODO(jan): ensure we select this one
+        uint64_t vrPhysicalDevice = 0;
+        vr->GetOutputDevice( &vrPhysicalDevice, vr::TextureType_Vulkan, (VkInstance_T*)&vk.handle);
+
         for (
             int i = vr::k_unTrackedDeviceIndex_Hmd;
             i < vr::k_unMaxTrackedDeviceCount;
