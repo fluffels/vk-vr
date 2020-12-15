@@ -15,6 +15,7 @@ INITIALIZE_EASYLOGGINGPP
 #include "RenderMesh.h"
 #include "RenderText.h"
 #include "State.h"
+#include "String.cpp"
 #include "Vulkan.h"
 #include <vulkan/vulkan_win32.h>
 
@@ -134,25 +135,20 @@ WinMain(
     );
     ShowCursor(FALSE);
 
-    Vulkan vk;
-    vk.extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-    createVKInstance(vk);
-    vk.swap.surface = getSurface(window, instance, vk.handle);
-    initVK(vk);
+    if (!vr::VR_IsHmdPresent()) {
+        LOG(ERROR) << "no headset connected";
+        exit(-1);
+    }
 
+    if (!vr::VR_IsRuntimeInstalled()) {
+        LOG(ERROR) << "no runtime installed";
+        exit(-1);
+    }
+
+    vr::IVRSystem* vr;
     {
-        if (!vr::VR_IsHmdPresent()) {
-            LOG(ERROR) << "no headset connected";
-            exit(-1);
-        }
-
-        if (!vr::VR_IsRuntimeInstalled()) {
-            LOG(ERROR) << "no runtime installed";
-            exit(-1);
-        }
-
         vr::EVRInitError error = vr::VRInitError_None;
-        vr::IVRSystem* vr = vr::VR_Init(&error, vr::VRApplication_Scene);
+        vr = vr::VR_Init(&error, vr::VRApplication_Scene);
 
         if (error != vr::VRInitError_None) {
             LOG(ERROR) << "could not init openvr";
@@ -165,31 +161,67 @@ WinMain(
             exit(-1);
         }
 
-//TODO(jan): ensure we select this one
-        uint64_t vrPhysicalDevice = 0;
-        vr->GetOutputDevice( &vrPhysicalDevice, vr::TextureType_Vulkan, (VkInstance_T*)&vk.handle);
-
-        for (
-            int i = vr::k_unTrackedDeviceIndex_Hmd;
-            i < vr::k_unMaxTrackedDeviceCount;
-            i++
-        ) {
-            if (vr->IsTrackedDeviceConnected(i)) {
-                auto deviceClass = vr->GetTrackedDeviceClass(i);
-                char buffer[255];
-                auto name = vr->GetStringTrackedDeviceProperty(
-                    i,
-                    vr::Prop_TrackingSystemName_String,
-                    buffer,
-                    255
-                );
-                LOG(INFO) << "tracked device [Class " << deviceClass << "]: " << buffer;
-            }
-        }
-
         if (!vr::VRCompositor()) {
             LOG(ERROR) << "could not start VR compositor";
+            exit(-1);
         }
+    }
+
+    vector<string> appExtensions;
+    {
+        uint32_t bufferSize =
+            vr::VRCompositor()->GetVulkanInstanceExtensionsRequired(
+                nullptr, 0
+            );
+        char* buffer = new char[bufferSize];
+        vr::VRCompositor()->GetVulkanInstanceExtensionsRequired(
+            buffer, bufferSize
+        );
+        LOG(INFO) << "openvr requires vk instance extensions: " << buffer;
+        cStringToVecOfStrings(
+            buffer,
+            appExtensions
+        );
+        delete[] buffer;
+    }
+
+    Vulkan vk;
+    vk.extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+    createVKInstance(vk, &appExtensions);
+    vk.swap.surface = getSurface(window, instance, vk.handle);
+
+//TODO(jan): ensure we select this one
+    uint64_t vrPhysicalDevice = 0;
+    vr->GetOutputDevice( &vrPhysicalDevice, vr::TextureType_Vulkan, (VkInstance_T*)&vk.handle);
+
+    for (
+        int i = vr::k_unTrackedDeviceIndex_Hmd;
+        i < vr::k_unMaxTrackedDeviceCount;
+        i++
+    ) {
+        if (vr->IsTrackedDeviceConnected(i)) {
+            auto deviceClass = vr->GetTrackedDeviceClass(i);
+            char buffer[255];
+            auto name = vr->GetStringTrackedDeviceProperty(
+                i,
+                vr::Prop_TrackingSystemName_String,
+                buffer,
+                255
+            );
+            LOG(INFO) << "tracked device [Class " << deviceClass << "]: " << buffer;
+        }
+    }
+
+    initVK(vk);
+
+    {
+        vr::EVRInitError error = vr::VRInitError_None;
+
+        uint32_t nBufferSize = vr::VRCompositor()->GetVulkanDeviceExtensionsRequired((VkPhysicalDevice_T*)vk.gpu, nullptr, 0);
+        auto buffer = new char[nBufferSize];
+        nBufferSize = vr::VRCompositor()->GetVulkanDeviceExtensionsRequired((VkPhysicalDevice_T*)vk.gpu, buffer, nBufferSize);
+        LOG(INFO) << "openvr requires extensions: " << buffer;
+        delete[] buffer;
 
         auto vrIface = (vr::IVRRenderModels*)vr::VR_GetGenericInterface(
             vr::IVRRenderModels_Version,
